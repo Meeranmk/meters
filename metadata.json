@@ -1,0 +1,6 @@
+{
+  "name": "Meters to Feet Converter",
+  "description": "A precise and elegant converter to translate meters to feet and inches, or vice versa, complete with real-time visual height comparisons and historical logs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
