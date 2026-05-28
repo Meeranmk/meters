@@ -1,6 +1,6 @@
 {
-  "name": "Meters ⇄ Feet Converter",
-  "short_name": "Meters⇄Feet",
+  "name": "Meters to Feet Converter",
+  "short_name": "Meters to Feet",
   "description": "Precise and elegant conversion between meters and feet with visual guides.",
   "id": "/index.html?source=pwa",
   "start_url": "/index.html?source=pwa",

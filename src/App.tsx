@@ -115,7 +115,7 @@ export default function App() {
             </div>
             <div className="text-left">
               <h1 className="font-display font-black text-lg leading-tight tracking-tight">
-                Meters ⇄ Feet
+                Meters to Feet
               </h1>
             </div>
           </div>
