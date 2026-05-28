@@ -82,11 +82,11 @@ export default function App() {
     if (!navigator.clipboard) return;
     const isEmpty = mode === 'm_to_ft' ? !metersInput.trim() : !feetInput.trim();
     if (isEmpty) return; // Don't copy empty states
-    
+
     const txt = mode === 'm_to_ft'
       ? `${metersInput}m = ${finalFeet.toFixed(2)} ft`
       : `${feetInput} ft = ${finalMeters.toFixed(2)}m`;
-    
+
     navigator.clipboard.writeText(txt).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -104,7 +104,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-start items-center p-0 select-none">
-      
+
       {/* Upper Brand / Theme Header */}
       <nav className="w-full bg-linear-to-r from-indigo-600 to-indigo-700 py-5 px-4 text-white shadow-xs relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -115,7 +115,7 @@ export default function App() {
             </div>
             <div className="text-left">
               <h1 className="font-display font-black text-lg leading-tight tracking-tight">
-                Meters to Feet
+                Meters ⇄ Feet
               </h1>
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function App() {
 
         {/* INPUT PANEL CARD */}
         <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 relative">
-          
+
           {/* Header Label inside Card */}
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
@@ -162,7 +162,7 @@ export default function App() {
                   >
                     <Minus className="w-4 h-4" />
                   </button>
-                  
+
                   <div className="flex-1 text-center relative">
                     <input
                       type="number"
@@ -204,7 +204,7 @@ export default function App() {
                   >
                     <Minus className="w-4 h-4" />
                   </button>
-                  
+
                   <div className="flex-1 text-center relative">
                     <input
                       type="number"
@@ -235,7 +235,7 @@ export default function App() {
 
         {/* OUTPUT LIVE PREVIEW CONTAINER */}
         <div className="bg-slate-900 text-white rounded-3xl p-5 shadow-xs relative overflow-hidden">
-          
+
           {/* Subtle accent sphere */}
           <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -245,7 +245,7 @@ export default function App() {
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
               Conversion Result
             </span>
-            
+
             <button
               onClick={handleCopyText}
               id="mobile-copy-button"
@@ -310,7 +310,7 @@ export default function App() {
       </main>
 
 
-      
+
     </div>
   );
 }

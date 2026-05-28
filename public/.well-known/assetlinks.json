@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "app.vercel.meters_feet.twa",
-        "sha256_cert_fingerprints": ["C0:19:F5:86:0E:CD:66:4D:69:9E:B5:E3:A7:C1:28:96:BB:B5:77:7A:CA:B3:2F:09:AB:8C:8C:7E:91:A0:AD:63"]
+        "sha256_cert_fingerprints": ["40:DC:CD:61:DF:A2:3C:97:5B:9E:0A:E7:56:CD:E7:F9:29:0D:B4:E7:2F:1A:8F:08:EF:7A:C3:38:D1:6E:F7:F4"]
       }
     }]
