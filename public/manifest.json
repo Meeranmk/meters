@@ -49,17 +49,20 @@
   "screenshots": [
     {
       "src": "/screenshot-mobile.png",
-      "sizes": "320x640",
+      "sizes": "487x818",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Meters and Feet conversion on mobile device"
     },
     {
       "src": "/screenshot-desktop.png",
-      "sizes": "1024x768",
+      "sizes": "1024x518",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Meters and Feet conversion on desktop"
     }
-  ]
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "iarc_rating_id": ""
 }
