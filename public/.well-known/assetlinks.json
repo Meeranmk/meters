@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.meters_feet.twa",
+        "sha256_cert_fingerprints": ["C0:19:F5:86:0E:CD:66:4D:69:9E:B5:E3:A7:C1:28:96:BB:B5:77:7A:CA:B3:2F:09:AB:8C:8C:7E:91:A0:AD:63"]
+      }
+    }]
