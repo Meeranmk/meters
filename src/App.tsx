@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Ruler,
@@ -8,9 +8,14 @@ import {
   RotateCcw,
   Sparkles,
   Plus,
-  Minus
+  Minus,
+  History,
+  MessageSquare,
+  Trash2,
+  X,
+  Send
 } from 'lucide-react';
-import { ConversionMode } from './types';
+import { ConversionMode, HistoryItem } from './types';
 import {
   metersToFeet,
   feetToMeters
@@ -24,8 +29,34 @@ export default function App() {
   const [metersInput, setMetersInput] = useState<string>('');
   const [feetInput, setFeetInput] = useState<string>('');
 
-  // Interactive copy feedback feedback
+  // Interactive copy feedback
   const [copied, setCopied] = useState<boolean>(false);
+
+  // Precision level state (2, 3, or 4 decimals)
+  const [precision, setPrecision] = useState<number>(2);
+
+  // History state loaded from localStorage
+  const [history, setHistory] = useState<HistoryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('meterfeet_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Tester Feedback modal states
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState<boolean>(false);
+  const [feedbackText, setFeedbackText] = useState<string>('');
+  const [feedbackSent, setFeedbackSent] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('meterfeet_history', JSON.stringify(history));
+    } catch (e) {
+      console.error('Failed to save history', e);
+    }
+  }, [history]);
 
   // Parse safety checks
   const parsedMeters = Math.max(0, parseFloat(metersInput) || 0);
@@ -43,27 +74,25 @@ export default function App() {
     finalFeet = parsedFeet;
   }
 
-  // Helper adjustment triggers for responsive design
+  // Helper adjustment triggers
   const adjustMeters = (amount: number) => {
     const nextVal = Math.max(0, parsedMeters + amount);
-    // Format to 2 decimal places to avoid float precision artifacts
-    setMetersInput(parseFloat(nextVal.toFixed(2)).toString());
+    setMetersInput(parseFloat(nextVal.toFixed(precision)).toString());
   };
 
   const adjustFeet = (amount: number) => {
     const nextVal = Math.max(0, parsedFeet + amount);
-    // Format to 2 decimal places
-    setFeetInput(parseFloat(nextVal.toFixed(2)).toString());
+    setFeetInput(parseFloat(nextVal.toFixed(precision)).toString());
   };
 
-  // Safe Mode Toggle inputs without losing general scale
+  // Safe Mode Toggle
   const toggleMode = () => {
     if (mode === 'm_to_ft') {
       if (!metersInput.trim()) {
         setFeetInput('');
       } else {
         const convertedFt = metersToFeet(parsedMeters);
-        setFeetInput(convertedFt.toFixed(2));
+        setFeetInput(convertedFt.toFixed(precision));
       }
       setMode('ft_to_m');
     } else {
@@ -71,29 +100,46 @@ export default function App() {
         setMetersInput('');
       } else {
         const convertedMeters = feetToMeters(parsedFeet);
-        setMetersInput(convertedMeters.toFixed(2));
+        setMetersInput(convertedMeters.toFixed(precision));
       }
       setMode('m_to_ft');
     }
   };
 
-  // Perform clipboard copy
+  // Save current conversion to history
+  const saveToHistory = (fromVal: string, fromUnit: string, toVal: string, toUnit: string) => {
+    if (!fromVal.trim() || parseFloat(fromVal) <= 0) return;
+    const newItem: HistoryItem = {
+      id: Date.now().toString(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      fromValue: fromVal,
+      fromUnit,
+      toValue: toVal,
+      toUnit
+    };
+    setHistory(prev => [newItem, ...prev.slice(0, 9)]);
+  };
+
+  // Perform clipboard copy & store history
   const handleCopyText = () => {
     if (!navigator.clipboard) return;
     const isEmpty = mode === 'm_to_ft' ? !metersInput.trim() : !feetInput.trim();
-    if (isEmpty) return; // Don't copy empty states
+    if (isEmpty) return;
 
-    const txt = mode === 'm_to_ft'
-      ? `${metersInput}m = ${finalFeet.toFixed(2)} ft`
-      : `${feetInput} ft = ${finalMeters.toFixed(2)}m`;
+    const fromVal = mode === 'm_to_ft' ? metersInput : feetInput;
+    const fromUnit = mode === 'm_to_ft' ? 'm' : 'ft';
+    const toVal = mode === 'm_to_ft' ? finalFeet.toFixed(precision) : finalMeters.toFixed(precision);
+    const toUnit = mode === 'm_to_ft' ? 'ft' : 'm';
+
+    const txt = `${fromVal} ${fromUnit} = ${toVal} ${toUnit}`;
 
     navigator.clipboard.writeText(txt).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      saveToHistory(fromVal, fromUnit, toVal, toUnit);
     });
   };
 
-  // Preset reset values to empty string
   const handleReset = () => {
     if (mode === 'm_to_ft') {
       setMetersInput('');
@@ -102,13 +148,34 @@ export default function App() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-start items-center p-0 select-none">
+  const applyPreset = (val: number) => {
+    if (mode === 'm_to_ft') {
+      setMetersInput(val.toString());
+    } else {
+      setFeetInput(val.toString());
+    }
+  };
 
-      {/* Upper Brand / Theme Header */}
-      <nav className="w-full bg-linear-to-r from-indigo-600 to-indigo-700 py-5 px-4 text-white shadow-xs relative overflow-hidden">
+  const handleSendFeedback = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedbackText.trim()) return;
+    setFeedbackSent(true);
+    setTimeout(() => {
+      setFeedbackSent(false);
+      setFeedbackText('');
+      setIsFeedbackOpen(false);
+    }, 1800);
+  };
+
+  const presets = mode === 'm_to_ft' ? [1, 2, 5, 10, 50, 100] : [1, 3, 6, 10, 50, 100];
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-start items-center p-0 select-none font-sans">
+
+      {/* Navigation Header */}
+      <nav className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 py-4 px-4 text-white shadow-xs relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="max-w-md mx-auto flex items-center justify-center">
+        <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-white/10 p-1.5 rounded-lg">
               <Ruler className="w-5 h-5 text-indigo-100" />
@@ -117,13 +184,23 @@ export default function App() {
               <h1 className="font-display font-black text-lg leading-tight tracking-tight">
                 Meters ⇄ Feet
               </h1>
+              <span className="text-[10px] text-indigo-200 block font-mono">v1.0.2 • Closed Beta</span>
             </div>
           </div>
+
+          <button
+            onClick={() => setIsFeedbackOpen(true)}
+            id="tester-feedback-btn"
+            className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:scale-95 px-3 py-1.5 rounded-full text-xs font-medium border border-white/20 transition-all cursor-pointer"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Tester Feedback</span>
+          </button>
         </div>
       </nav>
 
       {/* Main Single Column Adaptive Container */}
-      <main className="w-full max-w-md px-4 py-6 flex flex-col gap-4">
+      <main className="w-full max-w-md px-4 py-5 flex flex-col gap-4">
 
         {/* INPUT PANEL CARD */}
         <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 relative">
@@ -131,7 +208,7 @@ export default function App() {
           {/* Header Label inside Card */}
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
-              Adjust Value
+              Adjust Value ({mode === 'm_to_ft' ? 'Meters' : 'Feet'})
             </span>
             <button
               onClick={handleReset}
@@ -153,7 +230,6 @@ export default function App() {
                 transition={{ duration: 0.12 }}
                 className="space-y-4"
               >
-                {/* Meter Incrementor Box */}
                 <div className="flex items-center gap-2 bg-slate-50 rounded-2xl p-2 border border-slate-100">
                   <button
                     onClick={() => adjustMeters(-0.1)}
@@ -170,7 +246,7 @@ export default function App() {
                       min="0"
                       value={metersInput}
                       onChange={(e) => setMetersInput(e.target.value)}
-                      className="w-full bg-transparent text-center text-3xl font-extrabold text-slate-900 border-none outline-hidden focus:ring-0 font-mono"
+                      className="w-full bg-transparent text-center text-3xl font-extrabold text-slate-900 border-none outline-none focus:ring-0 font-mono"
                       placeholder="0.00"
                       id="meters-mobile-input"
                     />
@@ -195,7 +271,6 @@ export default function App() {
                 transition={{ duration: 0.12 }}
                 className="space-y-4"
               >
-                {/* Feet Incrementor Box */}
                 <div className="flex items-center gap-2 bg-slate-50 rounded-2xl p-2 border border-slate-100">
                   <button
                     onClick={() => adjustFeet(-0.1)}
@@ -212,7 +287,7 @@ export default function App() {
                       min="0"
                       value={feetInput}
                       onChange={(e) => setFeetInput(e.target.value)}
-                      className="w-full bg-transparent text-center text-3xl font-extrabold text-slate-900 border-none outline-hidden focus:ring-0 font-mono"
+                      className="w-full bg-transparent text-center text-3xl font-extrabold text-slate-900 border-none outline-none focus:ring-0 font-mono"
                       placeholder="0.00"
                       id="feet-mobile-input"
                     />
@@ -231,63 +306,91 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          {/* Quick Presets Row */}
+          <div className="mt-3 pt-3 border-t border-slate-100">
+            <span className="text-[10px] font-bold text-slate-400 block mb-2 font-mono">QUICK PRESETS</span>
+            <div className="flex flex-wrap gap-1.5">
+              {presets.map(p => (
+                <button
+                  key={p}
+                  onClick={() => applyPreset(p)}
+                  className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-slate-600 font-mono transition-all active:scale-95 cursor-pointer"
+                >
+                  {p}{mode === 'm_to_ft' ? 'm' : 'ft'}
+                </button>
+              ))}
+            </div>
+          </div>
+
         </div>
 
         {/* OUTPUT LIVE PREVIEW CONTAINER */}
         <div className="bg-slate-900 text-white rounded-3xl p-5 shadow-xs relative overflow-hidden">
 
-          {/* Subtle accent sphere */}
           <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Label + Interactive Controls Bar */}
           <div className="flex items-center justify-between mb-4 relative z-10">
             <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest font-mono flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
               Conversion Result
             </span>
 
-            <button
-              onClick={handleCopyText}
-              id="mobile-copy-button"
-              className="bg-white/5 hover:bg-white/10 active:scale-90 px-3 py-1.5 rounded-xl text-slate-350 border border-white/10 transition-all cursor-pointer flex items-center gap-2 text-xs font-semibold font-mono"
-              title="Copy converted value"
-            >
-              <AnimatePresence mode="wait">
-                {copied ? (
-                  <motion.div key="copied" className="flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-emerald-400">Copied</span>
-                  </motion.div>
-                ) : (
-                  <motion.div key="copy" className="flex items-center gap-1">
-                    <Copy className="w-3.5 h-3.5 text-slate-300" />
-                    <span>Copy</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Precision selector */}
+              <div className="flex items-center bg-white/10 rounded-lg p-0.5 text-[10px] font-mono text-slate-300">
+                {[2, 3, 4].map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setPrecision(p)}
+                    className={`px-1.5 py-0.5 rounded cursor-pointer ${precision === p ? 'bg-indigo-600 text-white font-bold' : 'hover:text-white'}`}
+                  >
+                    .{p}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleCopyText}
+                id="mobile-copy-button"
+                className="bg-white/10 hover:bg-white/20 active:scale-90 px-3 py-1.5 rounded-xl text-slate-200 border border-white/10 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold font-mono"
+                title="Copy converted value"
+              >
+                <AnimatePresence mode="wait">
+                  {copied ? (
+                    <motion.div key="copied" className="flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400">Copied</span>
+                    </motion.div>
+                  ) : (
+                    <motion.div key="copy" className="flex items-center gap-1">
+                      <Copy className="w-3.5 h-3.5 text-slate-300" />
+                      <span>Copy</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+            </div>
           </div>
 
-          {/* Core Simple Result display */}
           <div className="my-2 relative z-10">
             {mode === 'm_to_ft' ? (
               <div className="flex flex-col gap-1">
                 <div className="text-4xl font-extrabold font-display tracking-tight text-white flex items-baseline gap-1.5">
-                  <span>{!metersInput.trim() ? '—' : finalFeet.toFixed(2)}</span>
+                  <span>{!metersInput.trim() ? '—' : finalFeet.toFixed(precision)}</span>
                   <span className="text-xl text-indigo-300 font-normal">feet</span>
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono mt-1">
-                  High precision: <span className="text-white font-semibold">{!metersInput.trim() ? '—' : `${finalFeet.toFixed(5)} ft`}</span>
+                  Exact: <span className="text-white font-semibold">{!metersInput.trim() ? '—' : `${finalFeet.toFixed(6)} ft`}</span>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col gap-1">
                 <div className="text-4xl font-extrabold font-display tracking-tight text-white flex items-baseline gap-1.5">
-                  <span>{!feetInput.trim() ? '—' : finalMeters.toFixed(2)}</span>
+                  <span>{!feetInput.trim() ? '—' : finalMeters.toFixed(precision)}</span>
                   <span className="text-xl text-indigo-300 font-normal">meters</span>
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                  <span>High precision: <span className="text-white font-semibold">{!feetInput.trim() ? '—' : `${finalMeters.toFixed(5)} m`}</span></span>
+                  <span>Exact: <span className="text-white font-semibold">{!feetInput.trim() ? '—' : `${finalMeters.toFixed(6)} m`}</span></span>
                   <span>cm: <span className="text-white font-semibold">{!feetInput.trim() ? '—' : (finalMeters * 100).toFixed(1)}</span></span>
                   <span>mm: <span className="text-white font-semibold">{!feetInput.trim() ? '—' : (finalMeters * 1000).toFixed(0)}</span></span>
                 </div>
@@ -307,10 +410,98 @@ export default function App() {
           <span>Switch to {mode === 'm_to_ft' ? 'Feet to Meters' : 'Meters to Feet'}</span>
         </button>
 
+        {/* HISTORY LOG CARD */}
+        {history.length > 0 && (
+          <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono flex items-center gap-1">
+                <History className="w-3.5 h-3.5 text-indigo-500" />
+                Recent History
+              </span>
+              <button
+                onClick={() => setHistory([])}
+                className="text-[10px] text-red-500 hover:text-red-600 font-mono flex items-center gap-1 cursor-pointer"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {history.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl text-xs font-mono text-slate-700 border border-slate-100 hover:border-indigo-200 transition-all"
+                >
+                  <div>
+                    <span className="font-semibold">{item.fromValue} {item.fromUnit}</span>
+                    <span className="text-slate-400 mx-1.5">→</span>
+                    <span className="text-indigo-600 font-bold">{item.toValue} {item.toUnit}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">{item.timestamp}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </main>
 
+      {/* FEEDBACK MODAL */}
+      <AnimatePresence>
+        {isFeedbackOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() => setIsFeedbackOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-full cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
+              <h2 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-indigo-600" />
+                Closed Tester Feedback
+              </h2>
+              <p className="text-xs text-slate-500 mb-4">
+                Thank you for testing Meters ⇄ Feet Converter! Please share your thoughts or report any bugs.
+              </p>
+
+              {feedbackSent ? (
+                <div className="p-4 bg-emerald-50 text-emerald-700 rounded-2xl text-center text-xs font-semibold flex items-center justify-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  Feedback received! Thank you for testing.
+                </div>
+              ) : (
+                <form onSubmit={handleSendFeedback} className="space-y-3">
+                  <textarea
+                    rows={4}
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    placeholder="E.g., Great UI! Could you add yard conversions in future updates?"
+                    className="w-full p-3 text-xs border border-slate-200 rounded-2xl outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-sans"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    Submit Feedback
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
 }
+
