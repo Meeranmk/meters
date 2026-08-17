@@ -10,10 +10,7 @@ import {
   Plus,
   Minus,
   History,
-  MessageSquare,
-  Trash2,
-  X,
-  Send
+  Trash2
 } from 'lucide-react';
 import { ConversionMode, HistoryItem } from './types';
 import {
@@ -45,10 +42,7 @@ export default function App() {
     }
   });
 
-  // Tester Feedback modal states
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState<boolean>(false);
-  const [feedbackText, setFeedbackText] = useState<string>('');
-  const [feedbackSent, setFeedbackSent] = useState<boolean>(false);
+
 
   useEffect(() => {
     try {
@@ -156,16 +150,7 @@ export default function App() {
     }
   };
 
-  const handleSendFeedback = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!feedbackText.trim()) return;
-    setFeedbackSent(true);
-    setTimeout(() => {
-      setFeedbackSent(false);
-      setFeedbackText('');
-      setIsFeedbackOpen(false);
-    }, 1800);
-  };
+
 
   const presets = mode === 'm_to_ft' ? [1, 2, 5, 10, 50, 100] : [1, 3, 6, 10, 50, 100];
 
@@ -184,18 +169,9 @@ export default function App() {
               <h1 className="font-display font-black text-lg leading-tight tracking-tight">
                 Meters ⇄ Feet
               </h1>
-              <span className="text-[10px] text-indigo-200 block font-mono">v1.0.2 • Closed Beta</span>
+              <span className="text-[10px] text-indigo-200 block font-mono">v7.0.0</span>
             </div>
           </div>
-
-          <button
-            onClick={() => setIsFeedbackOpen(true)}
-            id="tester-feedback-btn"
-            className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:scale-95 px-3 py-1.5 rounded-full text-xs font-medium border border-white/20 transition-all cursor-pointer"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Tester Feedback</span>
-          </button>
         </div>
       </nav>
 
@@ -447,59 +423,7 @@ export default function App() {
 
       </main>
 
-      {/* FEEDBACK MODAL */}
-      <AnimatePresence>
-        {isFeedbackOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative"
-            >
-              <button
-                onClick={() => setIsFeedbackOpen(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-full cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
 
-              <h2 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-indigo-600" />
-                Closed Tester Feedback
-              </h2>
-              <p className="text-xs text-slate-500 mb-4">
-                Thank you for testing Meters ⇄ Feet Converter! Please share your thoughts or report any bugs.
-              </p>
-
-              {feedbackSent ? (
-                <div className="p-4 bg-emerald-50 text-emerald-700 rounded-2xl text-center text-xs font-semibold flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600" />
-                  Feedback received! Thank you for testing.
-                </div>
-              ) : (
-                <form onSubmit={handleSendFeedback} className="space-y-3">
-                  <textarea
-                    rows={4}
-                    value={feedbackText}
-                    onChange={(e) => setFeedbackText(e.target.value)}
-                    placeholder="E.g., Great UI! Could you add yard conversions in future updates?"
-                    className="w-full p-3 text-xs border border-slate-200 rounded-2xl outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-sans"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    Submit Feedback
-                  </button>
-                </form>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
     </div>
   );
